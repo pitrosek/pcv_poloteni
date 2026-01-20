@@ -146,14 +146,19 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Fantasy Fighter")
         self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont(None, 28)
+        self.large_font = pygame.font.SysFont(None, 50)
+        self.background = self.load_background()
+        self.reset_game()
+    
+    def reset_game(self):
+        """Obnovit hru na počátek."""
         self.player = Player(WIDTH // 2 - 65, HEIGHT - 150)
         self.bullets = []
         self.enemies = []
         self.spawn_timer = 0
         self.score = 0
-        self.font = pygame.font.SysFont(None, 28)
         self.running = True
-        self.background = self.load_background()
     
     def load_background(self):
         """Načtěte background obrázek nebo vrátí None."""
@@ -239,23 +244,52 @@ class Game:
         pygame.display.flip()
 
     def run(self):
-        while self.running:
-            self.clock.tick(FPS)
-            self.handle_events()
-            self.update()
-            self.draw()
+        game_running = True
+        while game_running:
+            self.reset_game()
+            while self.running:
+                self.clock.tick(FPS)
+                self.handle_events()
+                self.update()
+                self.draw()
 
-        # konec hry - ukázat skóre
-        self.show_game_over()
+            # Konec hry - ukázat skóre a možnost hrát znovu
+            game_running = self.show_game_over()
 
     def show_game_over(self):
-        msg = self.font.render(f"Konec hry. Skóre: {self.score}", True, (255, 200, 200))
-        rect = msg.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-        self.screen.blit(msg, rect)
-        pygame.display.flip()
-        pygame.time.delay(2000)
-        pygame.quit()
-        sys.exit()
+        """Ukázat obrazovku konce hry s možností hrát znovu."""
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        return True  # Hrát znovu
+                    elif event.key == pygame.K_ESCAPE:
+                        return False  # Ukončit hru
+            
+            # Vykreslit obrazovku
+            if self.background:
+                self.screen.blit(self.background, (0, 0))
+            else:
+                self.screen.fill(BG_COLOR)
+            
+            # Vykreslení textu
+            game_over_msg = self.large_font.render("KONEC HRY", True, (255, 100, 100))
+            score_msg = self.font.render(f"Skóre: {self.score}", True, (230, 230, 230))
+            restart_msg = self.font.render("MEZERNÍK - Hrát znovu  |  ESC - Konec", True, (200, 200, 200))
+            
+            game_over_rect = game_over_msg.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+            score_rect = score_msg.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
+            restart_rect = restart_msg.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
+            
+            self.screen.blit(game_over_msg, game_over_rect)
+            self.screen.blit(score_msg, score_rect)
+            self.screen.blit(restart_msg, restart_rect)
+            
+            pygame.display.flip()
+            self.clock.tick(30)
 
 
 if __name__ == '__main__':
